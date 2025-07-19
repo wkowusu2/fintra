@@ -1,7 +1,7 @@
 services:
   - type: web
     name: fintra-backend
-    env: java
+    env: docker
     buildCommand: "./mvnw clean install"
     startCommand: "java -jar target/*.jar"
     plan: free
