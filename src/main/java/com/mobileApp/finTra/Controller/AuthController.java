@@ -44,31 +44,50 @@ public class AuthController {
 
     public record LoginRequest(String email, String password) {}
 
-        @PostMapping("/register")
-        public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
 
-            if (userRepository.findByEmail(request.email()).isPresent()) {
-                return ResponseEntity.badRequest().body("Email already registered");
-            }
-
-            UserModel user = new UserModel();
-            user.setEmail(request.email());
-            user.setPassword(passwordEncoder.encode(request.password()));
-            user.setAccount_type(request.account_type());
-            user.setPhone(request.phone());
-            user.setFirst_name(request.first_name());
-            user.setLast_name(request.last_name());
-            user.setMiddle_name(request.middle_name());
-            user.setDob(request.dob());
-            user.setCountry(request.country());
-
-
-            userRepository.save(user);
-            String token = jwtUtil.generateToken(user.getEmail());
-            System.out.println("token from register: "+token);
-            return ResponseEntity.ok(Map.of("token", token).toString());
+        if (userRepository.findByEmail(request.email()).isPresent()) {
+            return ResponseEntity.badRequest().body("Email already registered");
         }
 
-        public record RegisterRequest(String email, String password, String first_name, String last_name, String middle_name, String phone, String account_type, String country, LocalDate dob) {}
+        UserModel user = new UserModel();
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setAccount_type(request.account_type());
+        user.setPhone(request.phone());
+        user.setFirst_name(request.first_name());
+        user.setLast_name(request.last_name());
+        user.setMiddle_name(request.middle_name());
+        user.setDob(request.dob());
+        user.setCountry(request.country());
+        user.setBalance(0); // Optional: set initial balance
+
+        userRepository.save(user);
+
+        // Generate token
+        String token = jwtUtil.generateToken(user.getEmail());
+
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "user", Map.of(
+                        "id", user.getId(),
+                        "email", user.getEmail(),
+                        "first_name", user.getFirst_name(),
+                        "last_name", user.getLast_name(),
+                        "phone", user.getPhone(),
+                        "account_type", user.getAccount_type(),
+                        "country", user.getCountry(),
+                        "dob", user.getDob(),
+                        "balance", user.getBalance()
+                )
+        ));
+    }
+
+
+
+
+
+    public record RegisterRequest(String email, String password, String first_name, String last_name, String middle_name, String phone, String account_type, String country, LocalDate dob) {}
     }
 

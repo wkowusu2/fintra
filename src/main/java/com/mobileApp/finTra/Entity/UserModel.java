@@ -16,6 +16,14 @@ public class UserModel {
     @Column(name = "first_name", nullable = false)
     private String first_name;
 
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
     @Column(name = "last_name", nullable = false)
     private String last_name;
 

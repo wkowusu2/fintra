@@ -109,7 +109,7 @@ public class PaystackController {
         return ResponseEntity.ok("Withdrawal processed successfully");
     }
 
-    
+
     @PostMapping("/transfer")
     public ResponseEntity<?> transferBetweenUsers(@RequestBody TransferRequest request) {
         if (request.senderEmail.equals(request.receiverEmail)) {
@@ -118,28 +118,18 @@ public class PaystackController {
                     .body("Cannot transfer to the same account");
         }
 
-        UserModel sender = userRepository.findByEmail(request.senderEmail)
-                .orElse(null);
-
+        UserModel sender = userRepository.findByEmail(request.senderEmail).orElse(null);
         if (sender == null) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body("Sender not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Sender not found");
         }
 
-        UserModel receiver = userRepository.findByEmail(request.receiverEmail)
-                .orElse(null);
-
+        UserModel receiver = userRepository.findByEmail(request.receiverEmail).orElse(null);
         if (receiver == null) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body("Receiver not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Receiver not found");
         }
 
         if (sender.getBalance() < request.amount) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Insufficient funds");
+            return ResponseEntity.badRequest().body("Insufficient funds");
         }
 
         // Debit sender
@@ -149,6 +139,26 @@ public class PaystackController {
         // Credit receiver
         receiver.setBalance(receiver.getBalance() + request.amount);
         userRepository.save(receiver);
+
+        // Record for sender
+        String senderReference = UUID.randomUUID().toString();
+        transactionRepository.save(new TransactionModel(
+                senderReference,
+                sender.getId(),
+                "TRANSFER",
+                request.amount,
+                "SUCCESS"
+        ));
+
+        // Record for receiver
+        String receiverReference = UUID.randomUUID().toString();
+        transactionRepository.save(new TransactionModel(
+                receiverReference,
+                receiver.getId(),
+                "INCOME",
+                request.amount,
+                "SUCCESS"
+        ));
 
         return ResponseEntity.ok("Transfer successful");
     }
