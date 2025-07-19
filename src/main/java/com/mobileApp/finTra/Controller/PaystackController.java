@@ -29,21 +29,23 @@ public class PaystackController {
         this.userRepository = userRepository;
     }
 
+//    @PostMapping("/topup")
     @PostMapping("/topup")
     public ResponseEntity<?> topUp(@RequestBody Map<String, String> body) {
-        System.out.println("topup is being hit");
         String email = body.get("email");
         int amount = Integer.parseInt(body.get("amount"));
         Long userId = Long.parseLong(body.get("userId"));
         String paymentType = body.get("type"); // "card" or "momo"
+        String callbackUrl = body.get("callback_url"); // ✅ read from frontend
 
         String reference = UUID.randomUUID().toString();
 
         // Save transaction
         transactionRepository.save(new TransactionModel(reference, userId, "TOPUP", amount, "PENDING"));
-        System.out.println("transaction is being saved");
-        String authorizationUrl = paystackService.initializeTransaction(email, amount, reference, paymentType);
-        System.out.println("url to be sent");
+
+        // Send callbackUrl to Paystack
+        String authorizationUrl = paystackService.initializeTransaction(email, amount, reference, paymentType, callbackUrl);
+
         return ResponseEntity.ok(Map.of(
                 "reference", reference,
                 "authorization_url", authorizationUrl

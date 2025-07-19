@@ -25,7 +25,7 @@ public class PaystackService {
     }
 
     // 1️⃣ Initialize a payment (Top-up)
-    public String initializeTransaction(String email, int amount, String reference, String type) {
+    public String initializeTransaction(String email, int amount, String reference, String type, String callbackUrl) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(secretKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -35,6 +35,7 @@ public class PaystackService {
         payload.put("amount", amount); // in pesewas
         payload.put("reference", reference);
         payload.put("currency", "GHS");
+        payload.put("callback_url", callbackUrl); // ✅ Include the callback URL here
 
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("payment_type", type); // momo or card
