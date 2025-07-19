@@ -30,7 +30,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         Authentication authenticationRequest = new UsernamePasswordAuthenticationToken(
                 loginRequest.email(), loginRequest.password());
 
@@ -38,8 +38,26 @@ public class AuthController {
 
         // Generate JWT token
         String token = jwtUtil.generateToken(loginRequest.email());
-        System.out.println("token from sign in:"+token);
-        return ResponseEntity.ok(token); // ✅ Token returned to client
+        System.out.println("token from sign in: " + token);
+
+        // Fetch user details
+        UserModel user = userRepository.findByEmail(loginRequest.email()).orElseThrow();
+
+        // Return both token and user info
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "user", Map.of(
+                        "id", user.getId(),
+                        "email", user.getEmail(),
+                        "first_name", user.getFirst_name(),
+                        "last_name", user.getLast_name(),
+                        "phone", user.getPhone(),
+                        "account_type", user.getAccount_type(),
+                        "country", user.getCountry(),
+                        "dob", user.getDob(),
+                        "balance", user.getBalance()
+                )
+        ));
     }
 
     public record LoginRequest(String email, String password) {}
