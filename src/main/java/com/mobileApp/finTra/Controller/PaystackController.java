@@ -168,6 +168,7 @@ public class PaystackController {
 
     @PostMapping("/webhook")
     public ResponseEntity<?> handleWebhook(@RequestBody Map<String, Object> payload) {
+        System.out.println("webhook hit");
         Map<String, Object> data = (Map<String, Object>) payload.get("data");
         String reference = (String) data.get("reference");
         String status = (String) data.get("status");
