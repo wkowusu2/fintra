@@ -91,38 +91,23 @@ public class PaystackController {
         String bankCode = body.get("bankCode");
         String name = body.get("name");
 
-        UserModel user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         if (user.getBalance() < amount) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Insufficient balance");
         }
 
-        // Save transaction
-        String reference = UUID.randomUUID().toString();
-        transactionRepository.save(new TransactionModel(reference, userId, "WITHDRAWAL", amount, "PENDING"));
-
-        String recipientCode = paystackService.createTransferRecipient(name, accountNumber, bankCode);
-        String transferResponse = paystackService.initiateTransfer(amount, recipientCode, "Withdrawal by " + user.getEmail());
-
-        // Update balance
+        // Deduct balance
         user.setBalance(user.getBalance() - amount);
         userRepository.save(user);
-        TransactionModel trx = transactionRepository.findByReference(reference);
-        trx.setStatus("SUCCESS");
-        transactionRepository.save(trx);
 
-        return ResponseEntity.ok("Withdrawal initiated");
+        // Save withdrawal transaction
+        String reference = UUID.randomUUID().toString();
+        transactionRepository.save(new TransactionModel(reference, userId, "WITHDRAWAL", amount, "SUCCESS"));
+
+        return ResponseEntity.ok("Withdrawal processed successfully");
     }
-
-    @PostMapping("/confirm-withdrawal")
-    public ResponseEntity<?> confirmWithdrawal(@RequestBody Map<String, String> body) {
-        String transferCode = body.get("transferCode");
-        String otp = body.get("otp");
-
-        String result = paystackService.finalizeTransfer(transferCode, otp);
-        return ResponseEntity.ok(result);
-    }
-
 
     
     @PostMapping("/transfer")
