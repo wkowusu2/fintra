@@ -3,6 +3,7 @@ package com.mobileApp.finTra.Entity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,11 +49,24 @@ public class UserModel {
     @Column(name = "dob")
     private LocalDate dob;
 
-    @Column(name = "createdAt", insertable = false, updatable = false)
-    private java.sql.Timestamp createdAt;
+    @Column(name = "createdAt")
+    private Timestamp createdAt;
 
-    @Column(name = "updatedAt", insertable = false, updatable = false)
-    private java.sql.Timestamp updatedAt;
+    @Column(name = "updatedAt")
+    private Timestamp updatedAt;
+
+    // --- Timestamp Handlers ---
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Timestamp(System.currentTimeMillis());
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = new Timestamp(System.currentTimeMillis());
+    }
+
 
 //    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 //    private List<TransactionModel> transactions = new ArrayList<>();
