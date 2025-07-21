@@ -49,4 +49,12 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<UserModel> editUser(@PathVariable Long id, @RequestBody UserModel updatedUser) {
+        return userService.editUser(id, updatedUser)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
 }
