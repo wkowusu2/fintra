@@ -12,38 +12,35 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/payment")
 public class PaystackController {
+
     private final TransactionRepository transactionRepository;
     private final PaystackService paystackService;
     private final UserRepository userRepository;
 
-    public PaystackController(TransactionRepository transactionRepository,PaystackService paystackService, UserRepository userRepository) {
+    public PaystackController(TransactionRepository transactionRepository, PaystackService paystackService, UserRepository userRepository) {
         this.transactionRepository = transactionRepository;
         this.paystackService = paystackService;
         this.userRepository = userRepository;
     }
 
-//    @PostMapping("/topup")
     @PostMapping("/topup")
     public ResponseEntity<?> topUp(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         int amount = Integer.parseInt(body.get("amount"));
         Long userId = Long.parseLong(body.get("userId"));
-        String paymentType = body.get("type"); // "card" or "momo"
-        String callbackUrl = body.get("callback_url"); // ✅ read from frontend
+        String paymentType = body.get("type");
+        String callbackUrl = body.get("callback_url");
 
         String reference = UUID.randomUUID().toString();
 
-        // Save transaction
         transactionRepository.save(new TransactionModel(reference, userId, "TOPUP", amount, "PENDING"));
 
-        // Send callbackUrl to Paystack
         String authorizationUrl = paystackService.initializeTransaction(email, amount, reference, paymentType, callbackUrl);
 
         return ResponseEntity.ok(Map.of(
@@ -70,18 +67,21 @@ public class PaystackController {
             trx.setStatus("SUCCESS");
             transactionRepository.save(trx);
 
-            // Update balance
             UserModel user = userRepository.findById(trx.getUserId()).orElseThrow();
             user.setBalance(user.getBalance() + amount);
             userRepository.save(user);
 
-            return ResponseEntity.ok("Top-up successful");
+            return ResponseEntity.ok(Map.of(
+                    "message", "Top-up successful",
+                    "balance", user.getBalance()
+            ));
         } else {
             trx.setStatus("FAILED");
             transactionRepository.save(trx);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Top-up failed");
         }
     }
+
     @Transactional
     @PostMapping("/withdraw")
     public ResponseEntity<?> withdraw(@RequestBody Map<String, String> body) {
@@ -106,7 +106,10 @@ public class PaystackController {
         String reference = UUID.randomUUID().toString();
         transactionRepository.save(new TransactionModel(reference, userId, "WITHDRAWAL", amount, "SUCCESS"));
 
-        return ResponseEntity.ok("Withdrawal processed successfully");
+        return ResponseEntity.ok(Map.of(
+                "message", "Withdrawal processed successfully",
+                "balance", user.getBalance()
+        ));
     }
 
 
@@ -132,15 +135,12 @@ public class PaystackController {
             return ResponseEntity.badRequest().body("Insufficient funds");
         }
 
-        // Debit sender
         sender.setBalance(sender.getBalance() - request.amount);
         userRepository.save(sender);
 
-        // Credit receiver
         receiver.setBalance(receiver.getBalance() + request.amount);
         userRepository.save(receiver);
 
-        // Record for sender
         String senderReference = UUID.randomUUID().toString();
         transactionRepository.save(new TransactionModel(
                 senderReference,
@@ -150,7 +150,6 @@ public class PaystackController {
                 "SUCCESS"
         ));
 
-        // Record for receiver
         String receiverReference = UUID.randomUUID().toString();
         transactionRepository.save(new TransactionModel(
                 receiverReference,
@@ -160,7 +159,10 @@ public class PaystackController {
                 "SUCCESS"
         ));
 
-        return ResponseEntity.ok("Transfer successful");
+        return ResponseEntity.ok(Map.of(
+                "message", "Transfer successful",
+                "balance", sender.getBalance()
+        ));
     }
 
     @PostMapping("/webhook")
@@ -184,7 +186,4 @@ public class PaystackController {
 
         return ResponseEntity.ok().build();
     }
-
-
-
 }
