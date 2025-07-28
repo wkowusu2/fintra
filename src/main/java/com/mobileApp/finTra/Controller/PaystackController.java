@@ -157,6 +157,7 @@ public class PaystackController {
                 "INCOME",
                 request.amount,
                 "SUCCESS"
+
         ));
 
         return ResponseEntity.ok(Map.of(
